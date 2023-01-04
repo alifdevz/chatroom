@@ -1,32 +1,57 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
+import { useEffect, useState } from 'react';
 import './App.css'
 
+const ws = new WebSocket("ws://localhost:3000/cable");
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [messages, setMessages] = useState([]);
+  const [guid, setGuid] = useState("");
+  const messagesContainer = document.getElementById("messages");
+
+  ws.onopen = () => {
+    console.log("Connected to websocket server");
+    setGuid(Math.random().toString(36).substring(2, 15));
+
+    ws.send(
+      JSON.stringify({
+        command: "subscribe",
+        identifier: JSON.stringify({
+          id: guid,
+          channel: "MessageChannel",
+        }),
+      })
+    );
+  }
+
+  useEffect(() => {
+    fetchMessages();
+  }, []);
+
+  const fetchMessages = async () => {
+    const response = await fetch("http://localhost:3000");
+    const data = await response.json();
+    console.log(data)
+    setMessagesAndScrolldown(data);
+  }
+
+  const setMessagesAndScrolldown = (data) => {
+    setMessages(data);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+  }
 
   return (
     <div className="App">
-      <div>
-        <a href="https://vitejs.dev" target="_blank">
-          <img src="/vite.svg" className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://reactjs.org" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+      <div className="messageHeader">
+        <h1>Message</h1>
+        <p>Guid: { guid }</p>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
+      <div className="messages" id="messages">
+        {messages.map(message => {
+          <div className="message" key={ message.id }>
+            <div>{ message.body }</div>
+          </div>
+        })}
       </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
     </div>
   )
 }
