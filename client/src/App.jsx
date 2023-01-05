@@ -23,34 +23,66 @@ function App() {
     );
   }
 
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.type === "ping") return;
+    if (data.type ==="welcome") return;
+    if (data.type === "confirm_subscription") return;
+
+    const message = data.message;
+    setMessagesAndScrolldown(...messages, message);
+  }
+
   useEffect(() => {
     fetchMessages();
-  }, []);
+  }, [messages]);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    const body = event.target.message.value;
+    event.target.message.value = "";
+    await fetch("http://localhost:3000/messages", {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ body }),
+    })
+  }
 
   const fetchMessages = async () => {
-    const response = await fetch("http://localhost:3000");
+    const response = await fetch("http://localhost:3000/messages");
     const data = await response.json();
-    console.log(data)
     setMessagesAndScrolldown(data);
   }
 
   const setMessagesAndScrolldown = (data) => {
+    console.log(data)
     setMessages(data);
+    if (!messagesContainer) return;
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
   }
 
   return (
     <div className="App">
       <div className="messageHeader">
-        <h1>Message</h1>
+        <h1>Chatroom</h1>
         <p>Guid: { guid }</p>
       </div>
       <div className="messages" id="messages">
-        {messages.map(message => {
-          <div className="message" key={ message.id }>
-            <div>{ message.body }</div>
+        {messages.map(message => (
+          <div className="message" key={message.id}>
+            <p>{message.body}</p>
           </div>
-        })}
+        ))}
+      </div>
+      <div className='messageForm'>
+          <form onSubmit={handleSubmit}>
+            <input className="messageInput" type="text" name="message" />
+            <button className='messageButton' type="submit">
+              Send
+            </button>
+          </form>
       </div>
     </div>
   )
