@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import './App.css'
+import { useState, useEffect } from "react";
+import "./App.css";
 
 const ws = new WebSocket("ws://localhost:3000/cable");
 
@@ -17,75 +17,83 @@ function App() {
         command: "subscribe",
         identifier: JSON.stringify({
           id: guid,
-          channel: "MessageChannel",
+          channel: "MessagesChannel",
         }),
       })
     );
-  }
+  };
 
-  ws.onmessage = (event) => {
-    const data = JSON.parse(event.data);
+  ws.onmessage = (e) => {
+    const data = JSON.parse(e.data);
     if (data.type === "ping") return;
-    if (data.type ==="welcome") return;
+    if (data.type === "welcome") return;
     if (data.type === "confirm_subscription") return;
 
     const message = data.message;
-    setMessagesAndScrolldown(...messages, message);
-  }
+    setMessagesAndScrollDown([...messages, message]);
+  };
 
   useEffect(() => {
     fetchMessages();
+  }, [messages.length]);
+
+  useEffect(() => {
+    resetScroll();
   }, [messages]);
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    const body = event.target.message.value;
-    event.target.message.value = "";
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const body = e.target.message.value;
+    e.target.message.value = "";
+
     await fetch("http://localhost:3000/messages", {
-      method: 'POST',
+      method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({ body }),
-    })
-  }
+    });
+  };
 
   const fetchMessages = async () => {
     const response = await fetch("http://localhost:3000/messages");
     const data = await response.json();
-    setMessagesAndScrolldown(data);
-  }
+    setMessagesAndScrollDown(data);
+  };
 
-  const setMessagesAndScrolldown = (data) => {
-    console.log(data)
+  const setMessagesAndScrollDown = (data) => {
     setMessages(data);
+    resetScroll();
+  };
+
+  const resetScroll = () => {
     if (!messagesContainer) return;
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
-  }
+  };
 
   return (
     <div className="App">
       <div className="messageHeader">
-        <h1>Chatroom</h1>
-        <p>Guid: { guid }</p>
+        <h1>Messages</h1>
+        <p>Guid: {guid}</p>
       </div>
       <div className="messages" id="messages">
-        {messages.map(message => (
+        {messages.map((message) => (
           <div className="message" key={message.id}>
             <p>{message.body}</p>
           </div>
         ))}
       </div>
-      <div className='messageForm'>
-          <form onSubmit={handleSubmit}>
-            <input className="messageInput" type="text" name="message" />
-            <button className='messageButton' type="submit">
-              Send
-            </button>
-          </form>
+      <div className="messageForm">
+        <form onSubmit={handleSubmit}>
+          <input className="messageInput" type="text" name="message" autoComplete="off" />
+          <button className="messageButton" type="submit">
+            Send
+          </button>
+        </form>
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
